@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use emacs::{Env, IntoLisp, Result, Value, defun};
+use emacs::{defun, Env, IntoLisp, Result, Value};
 use nucleo::{Matcher, Nucleo};
 
 emacs::plugin_is_GPL_compatible!();
 
 struct NucleoSearcher {
-    nucleo: Nucleo<String>,
+    nucleo: Nucleo<u32>,
     matcher: Matcher,
 }
 
@@ -49,13 +49,15 @@ fn tick<'e>(env: &'e Env, nucleo: &mut NucleoSearcher, timeout: u64) -> Result<V
 #[defun]
 fn feed(nucleo: &mut NucleoSearcher, mut strings: Value) -> Result<()> {
     let injector = nucleo.nucleo.injector();
+    let mut idx = 0;
 
     while strings.is_not_nil() {
-        let string = strings.car()?;
-        injector.push(string, |x, c| {
-            c[0] = x.clone().into();
+        let string: String = strings.car()?;
+        injector.push(idx, move |_x, c| {
+            c[0] = string.into();
         });
         strings = strings.cdr()?;
+        idx += 1;
     }
 
     Ok(())
@@ -117,7 +119,7 @@ fn make_list<'e, I: DoubleEndedIterator<Item = Value<'e>>>(
 }
 
 #[defun]
-fn results<'e>(env: &'e Env, nucleo: &mut NucleoSearcher) -> Result<Value<'e>> {
+fn results<'e>(env: &'e Env, nucleo: &mut NucleoSearcher, mut input_values: Value<'e>) -> Result<Value<'e>> {
     let snapshot = nucleo.nucleo.snapshot();
     let pattern = snapshot.pattern().column_pattern(0);
     let matcher = &mut nucleo.matcher;
@@ -142,8 +144,24 @@ fn results<'e>(env: &'e Env, nucleo: &mut NucleoSearcher) -> Result<Value<'e>> {
 
         // println!("{s} {indices:?}: {spans:?}");
 
-        results.push((score, item.data.into_lisp(env)?, spans));
+        results.push((score, *item.data, spans));
     }
+
+    // initially sort by input strings index
+    results.sort_by_key(|x| x.1);
+
+    let mut input_idx = 0;
+
+    let mut results = results.into_iter()
+                         .map(|(score, idx, spans)| {
+                             while input_idx < idx {
+                                 input_idx += 1;
+                                 input_values = input_values.cdr().unwrap();
+                             }
+
+                             let string: Value = input_values.car().unwrap();
+                             (score, string, spans)
+                         }).collect::<Vec<_>>();
 
     results.sort_by_key(|x| x.0);
 
