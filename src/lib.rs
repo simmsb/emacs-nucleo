@@ -82,18 +82,21 @@ fn spanify(indices: &[u32]) -> Vec<(u32, u32)> {
         return r;
     };
     let mut last_seen = span_start;
+    let mut pushed = false;
     while let Some(n) = it.next() {
         if n > last_seen + 1 {
             r.push((span_start, last_seen));
+            pushed = true;
 
             span_start = n;
             last_seen = n;
         } else {
             last_seen = n;
+            pushed = false;
         }
     }
 
-    if span_start != last_seen {
+    if !pushed {
         r.push((span_start, last_seen));
     }
 
