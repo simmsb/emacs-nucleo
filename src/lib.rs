@@ -167,8 +167,7 @@ fn results<'e>(env: &'e Env, nucleo: &mut NucleoSearcher, mut input_values: Valu
 
     let result = make_list(
         env,
-        results.into_iter().rev().filter_map(|(score, value, spans)| {
-            let score = score.into_lisp(env).ok()?;
+        results.into_iter().rev().filter_map(|(_score, value, spans)| {
             let spans = make_list(
                 env,
                 spans
@@ -177,7 +176,7 @@ fn results<'e>(env: &'e Env, nucleo: &mut NucleoSearcher, mut input_values: Valu
             )
             .ok()?;
 
-            env.list((score, value, spans)).ok()
+            env.list((value, spans)).ok()
         }),
     )?;
 
