@@ -67,8 +67,8 @@ will lead to inaccuracies."
     (defvar completion-lazy-hilit-fn) ; Introduced in Emacs 30 (bug#47711)
     (if (bound-and-true-p completion-lazy-hilit)
         (setq completion-lazy-hilit-fn #'nucleo-highlight))
-    (cl-loop for (score value spans) in results
-             collect (propertize value 'spans spans 'score score))))
+    (cl-loop for (value spans) in results
+             collect (propertize value 'spans spans))))
 
 ;;;###autoload
 (defun nucleo--adjust-metadata (metadata)
