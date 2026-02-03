@@ -3,6 +3,7 @@
 (require 'nucleo-module)
 
 (defvar nucleo--searchers (make-hash-table :test 'equal))
+(defvar nucleo--all (make-hash-table :test 'equal))
 (defvar nucleo--ttl 600)
 (defvar nucleo--filtering-p nil)
 (defvar nucleo--prune-timer nil)
@@ -12,7 +13,12 @@
     (maphash (pcase-lambda (k `(,_ . ,last-access))
                (if (< last-access (- (float-time) nucleo--ttl))
                    (remhash k nucleo--searchers)))
-             nucleo--searchers)))
+             nucleo--searchers))
+  (when nucleo--all
+    (maphash (pcase-lambda (k `(,_ . ,last-access))
+               (if (< last-access (- (float-time) nucleo--ttl))
+                   (remhash k nucleo--all)))
+             nucleo--all)))
 
 (defun nucleo--ensure-timer ()
   (unless nucleo--prune-timer
@@ -38,6 +44,18 @@
                (or running changed))))
     (nucleo-module-results nuc all)))
 
+(defun nucleo--get-all (table pred needle prefix)
+  (pcase (gethash table nucleo--all)
+    (`(,all . ,_)
+     (puthash table (cons all (float-time)) nucleo--all)
+     all)
+    (_
+     (let ((all (if (and (string= prefix "") (stringp (car-safe table))
+                         (not (or pred completion-regexp-list (string= needle ""))))
+                    table (all-completions prefix table pred))))
+       (puthash table (cons all (float-time)) nucleo--all)
+       all))))
+
 (defun nucleo-highlight (result)
   "Highlight destructively the characters NEEDLE matched in HAYSTACK.
 HAYSTACK has to be a match according to `hotfuzz-all-completions'."
@@ -58,9 +76,7 @@ will lead to inaccuracies."
          (bounds (completion-boundaries beforepoint table pred afterpoint))
          (prefix (substring beforepoint 0 (car bounds)))
          (needle (substring beforepoint (car bounds)))
-         (all (if (and (string= prefix "") (stringp (car-safe table))
-                       (not (or pred completion-regexp-list (string= needle ""))))
-                  table (all-completions prefix table pred)))
+         (all (nucleo--get-all table pred needle prefix))
          (results (nucleo--do-filter needle all completion-ignore-case)))
     (nucleo--ensure-timer)
     (setq nucleo--filtering-p (not (string= needle "")))
