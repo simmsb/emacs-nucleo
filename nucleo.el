@@ -44,15 +44,13 @@
                (or running changed))))
     (nucleo-module-results nuc all)))
 
-(defun nucleo--get-all (table pred needle prefix)
+(defun nucleo--get-all (table pred needle)
   (pcase (gethash table nucleo--all)
     (`(,all . ,_)
      (puthash table (cons all (float-time)) nucleo--all)
      all)
     (_
-     (let ((all (if (and (string= prefix "") (stringp (car-safe table))
-                         (not (or pred completion-regexp-list (string= needle ""))))
-                    table (all-completions prefix table pred))))
+     (let ((all (all-completions needle table pred)))
        (puthash table (cons all (float-time)) nucleo--all)
        all))))
 
@@ -71,15 +69,10 @@ See `completion-all-completions' for the semantics of PRED and POINT.
 This function prematurely sorts the completions; mutating the result
 before passing it to `display-sort-function' or `cycle-sort-function'
 will lead to inaccuracies."
-  (let* ((beforepoint (substring string 0 point))
-         (afterpoint (if point (substring string point) ""))
-         (bounds (completion-boundaries beforepoint table pred afterpoint))
-         (prefix (substring beforepoint 0 (car bounds)))
-         (needle (substring beforepoint (car bounds)))
-         (all (nucleo--get-all table pred needle prefix))
-         (results (nucleo--do-filter needle all completion-ignore-case)))
+  (let* ((all (nucleo--get-all table pred string))
+         (results (nucleo--do-filter string all completion-ignore-case)))
     (nucleo--ensure-timer)
-    (setq nucleo--filtering-p (not (string= needle "")))
+    (setq nucleo--filtering-p (not (string= string "")))
     (defvar completion-lazy-hilit-fn) ; Introduced in Emacs 30 (bug#47711)
     (if (bound-and-true-p completion-lazy-hilit)
         (setq completion-lazy-hilit-fn #'nucleo-highlight))
