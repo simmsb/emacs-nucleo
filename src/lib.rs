@@ -137,7 +137,7 @@ fn results<'e>(env: &'e Env, nucleo: &mut NucleoSearcher, mut input_values: Valu
         };
 
         // indices is all the grapheme indexes which were matched
-        indices.sort_unstable();
+        indices.sort();
         indices.dedup();
 
         let spans = spanify(&indices);
