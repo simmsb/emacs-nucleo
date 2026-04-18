@@ -44,6 +44,11 @@
                (or running changed))))
     (nucleo-module-results nuc all)))
 
+(defun nucleo--not-lsp-strings (haystack)
+  "LSP sometimes breaks due to us returning unmodified strings or something"
+  (if-let* ((first-string (car-safe haystack)))
+      (null (get-text-property 0 'lsp-completion-item first-string))))
+
 (defun nucleo--get-all (table pred needle)
   (pcase (gethash table nucleo--all)
     (`(,all . ,_)
@@ -51,7 +56,8 @@
      all)
     (_
      (let ((all (all-completions needle table pred)))
-       (puthash table (cons all (float-time)) nucleo--all)
+       (when (nucleo--not-lsp-strings all)
+         (puthash table (cons all (float-time)) nucleo--all))
        all))))
 
 (defun nucleo-highlight (result)
