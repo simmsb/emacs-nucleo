@@ -135,9 +135,10 @@ fn results<'e>(env: &'e Env, nucleo: &mut NucleoSearcher, mut input_values: Valu
 
     for item in snapshot.matched_items(0..snapshot.matched_item_count()) {
         let s = &item.matcher_columns[0];
+        let st = s.slice(..);
         indices.clear();
 
-        let Some(score) = pattern.indices(s.slice(..), matcher, &mut indices) else {
+        let Some(score) = pattern.indices(st, matcher, &mut indices) else {
             continue;
         };
 
@@ -149,7 +150,7 @@ fn results<'e>(env: &'e Env, nucleo: &mut NucleoSearcher, mut input_values: Valu
 
         // println!("{s} {indices:?}: {spans:?}");
 
-        results.push((score, *item.data, spans));
+        results.push((score, *item.data, st, spans));
     }
 
     // initially sort by input strings index
@@ -158,21 +159,21 @@ fn results<'e>(env: &'e Env, nucleo: &mut NucleoSearcher, mut input_values: Valu
     let mut input_idx = 0;
 
     let mut results = results.into_iter()
-                         .map(|(score, idx, spans)| {
+                         .map(|(score, idx, st, spans)| {
                              while input_idx < idx {
                                  input_idx += 1;
                                  input_values = input_values.cdr().unwrap();
                              }
 
                              let string: Value = input_values.car().unwrap();
-                             (score, string, spans)
+                             (score, string, st, spans)
                          }).collect::<Vec<_>>();
 
-    results.sort_by_key(|x| x.0);
+    results.sort_by_key(|x| (x.0, x.2));
 
     let result = make_list(
         env,
-        results.into_iter().rev().filter_map(|(_score, value, spans)| {
+        results.into_iter().rev().filter_map(|(_score, value, _st, spans)| {
             let spans = make_list(
                 env,
                 spans
