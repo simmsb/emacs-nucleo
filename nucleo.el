@@ -96,7 +96,7 @@ will lead to inaccuracies."
 ;;;###autoload
 (progn
   (add-to-list 'completion-styles-alist
-               '(nucleo completion-flex-try-completion nucleo-all-completions
+               '(nucleo completion-basic-try-completion nucleo-all-completions
                  "Nucleo fuzzy completion."))
   (put 'nucleo 'completion--adjust-metadata #'nucleo--adjust-metadata))
 
