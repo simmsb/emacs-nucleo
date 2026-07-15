@@ -49,13 +49,13 @@
   (if-let* ((first-string (car-safe haystack)))
       (null (get-text-property 0 'lsp-completion-item first-string))))
 
-(defun nucleo--get-all (table)
+(defun nucleo--get-all (table pred)
   (pcase (gethash table nucleo--all)
     (`(,all . ,_)
-     (puthash table (cons all (float-time)) nucleo--all)
+     (puthash (cons table pred) (cons all (float-time)) nucleo--all)
      all)
     (_
-     (let ((all (all-completions "" table)))
+     (let ((all (all-completions "" table pred)))
        (when (nucleo--not-lsp-strings all)
          (puthash table (cons all (float-time)) nucleo--all))
        all))))
@@ -75,7 +75,7 @@ See `completion-all-completions' for the semantics of PRED and POINT.
 This function prematurely sorts the completions; mutating the result
 before passing it to `display-sort-function' or `cycle-sort-function'
 will lead to inaccuracies."
-  (let* ((all (nucleo--get-all table))
+  (let* ((all (nucleo--get-all table pred))
          (results (nucleo--do-filter string all completion-ignore-case)))
     (nucleo--ensure-timer)
     (setq nucleo--filtering-p (not (string= string "")))
