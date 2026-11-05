@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use emacs::{defun, Env, IntoLisp, Result, Value};
 use nucleo::{Matcher, Nucleo};
-
-use mimalloc::MiMalloc;
-
-#[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
+//
+// use mimalloc::MiMalloc;
+//
+// #[global_allocator]
+// static GLOBAL: MiMalloc = MiMalloc;
 
 emacs::plugin_is_GPL_compatible!();
 
@@ -169,7 +169,7 @@ fn results<'e>(env: &'e Env, nucleo: &mut NucleoSearcher, mut input_values: Valu
                              (score, string, st, spans)
                          }).collect::<Vec<_>>();
 
-    results.sort_by_key(|x| (x.0, x.2));
+    results.sort_by_key(|x| (x.0, x.2.len(), x.2));
 
     let result = make_list(
         env,
@@ -187,9 +187,4 @@ fn results<'e>(env: &'e Env, nucleo: &mut NucleoSearcher, mut input_values: Valu
     )?;
 
     Ok(result)
-}
-
-#[defun]
-fn say_hello(env: &Env, name: String) -> Result<Value<'_>> {
-    env.message(&format!("Hello, {}!", name))
 }
