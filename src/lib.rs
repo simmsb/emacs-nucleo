@@ -2,11 +2,6 @@ use std::sync::Arc;
 
 use emacs::{defun, Env, IntoLisp, Result, Value};
 use nucleo::{Matcher, Nucleo};
-//
-// use mimalloc::MiMalloc;
-//
-// #[global_allocator]
-// static GLOBAL: MiMalloc = MiMalloc;
 
 emacs::plugin_is_GPL_compatible!();
 
