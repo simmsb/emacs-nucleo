@@ -164,11 +164,11 @@ fn results<'e>(env: &'e Env, nucleo: &mut NucleoSearcher, mut input_values: Valu
                              (score, string, st, spans)
                          }).collect::<Vec<_>>();
 
-    results.sort_by_key(|x| (x.0, x.2.len(), x.2));
+    results.sort_by_key(|x| (std::cmp::Reverse(x.0), x.2.len(), x.2));
 
     let result = make_list(
         env,
-        results.into_iter().rev().filter_map(|(_score, value, _st, spans)| {
+        results.into_iter().filter_map(|(_score, value, _st, spans)| {
             let spans = make_list(
                 env,
                 spans
